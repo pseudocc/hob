@@ -17,7 +17,19 @@ const DEBUG = !!Bun.env.DEBUG;
  * @return {Promise<Device[]>} The list of devices found.
 **/
 export async function arpScan() {
-  const proc = Bun.spawn(['sudo', 'arp-scan', '-lxF', '${ip}\t${mac}']);
+  const args = [
+    'sudo', 'arp-scan',
+    '-lx',
+    '-F', '${ip}\t${mac}',
+  ];
+  if (Bun.env.IF) {
+    if (DEBUG) {
+      console.info(`Using interface ${Bun.env.IF}`);
+    }
+    args.push('-I', Bun.env.IF);
+  }
+
+  const proc = Bun.spawn(args);
   const text = await new Response(proc.stdout).text();
   const exited = await proc.exited;
 
