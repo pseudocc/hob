@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "dev": "DEBUG=1 bun run --hot src/index.js"
+  },
+  "dependencies": {
+    "hono": "^3.6.0"
+  },
+  "devDependencies": {
+    "bun-types": "^0.6.2"
+  }
+}
