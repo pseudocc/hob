@@ -77,6 +77,9 @@ export async function resolveHost(ip, domain='local') {
   const hostname = parts.at(-1);
   parts = hostname.split('.');
   if (parts.length < 2 || parts.at(-2) !== domain) {
+    if (parts[0] === '_gateway') {
+      return '';
+    }
     if (DEBUG) {
       console.warn(`${ip}: ${resolveHost.name} is fallbacking`);
     }
