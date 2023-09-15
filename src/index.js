@@ -42,8 +42,19 @@ async function deviceScan() {
 
     macs.add(device.mac);
 
-    if (deviceTable.has(device.mac))
-      continue;
+    if (deviceTable.has(device.mac)) {
+      const saved = deviceTable.get(device.mac);
+      if (!saved.seen)
+        continue;
+      saved.seen = Date.now();
+
+      if (saved.ip === device.ip)
+        continue;
+      if (DEBUG) {
+        console.info(`${device.mac} IP: ${saved.ip} -> ${device.ip}`);
+      }
+      saved.ip = device.ip;
+    }
 
     network.resolveHost(device.ip).then(async hostname => {
       if (hostname == null)
