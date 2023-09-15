@@ -97,6 +97,31 @@ export async function kernel(ip, user='u') {
   return text.trim();
 }
 
+/**
+ * Get the hostname of the SKU device.
+ * @param {string} ip The IP address of the device.
+ * @param {string} user The username to use for SSH.
+ * @return {Promise<?string>} The hostname of the device.
+**/
+export async function hostname(ip, user='u') {
+  const proc = Bun.spawn([
+    ...sshNC, `${user}@${ip}`,
+    'cat', '/etc/hostname',
+  ], { stderr: 'ignore' });
+
+  const text = await new Response(proc.stdout).text();
+  const exited = await proc.exited;
+
+  if (exited !== 0) {
+    if (DEBUG) {
+      console.warn(`${ip}: ${hostname.name} exited with code ${exited}`);
+    }
+    return null;
+  }
+
+  return text.trim();
+}
+
 function skuGetter() {
   return !!this.buildStamp;
 }

@@ -9,6 +9,7 @@
 **/
 
 'use strict';
+import { hostname as fallbackHost } from './sku.js';
 const DEBUG = !!Bun.env.DEBUG;
 
 /**
@@ -76,7 +77,11 @@ export async function resolveHost(ip, domain='local') {
   const hostname = parts.at(-1);
   parts = hostname.split('.');
   if (parts.length < 2 || parts.at(-2) !== domain) {
-    return '';
+    if (DEBUG) {
+      console.warn(`${ip}: ${resolveHost.name} is fallbacking`);
+    }
+    const fallback = await fallbackHost(ip);
+    return fallback || '';
   }
 
   return parts.at(-3) || '';
