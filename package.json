@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "dev": "DEBUG=1 bun run --hot src/index.js"
+    "dev": "DEBUG=1 bun run --hot src/index.js",
+    "start": "source .env && bun run src/index.js"
   },
   "dependencies": {
     "hono": "^3.6.0"

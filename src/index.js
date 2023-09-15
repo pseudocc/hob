@@ -9,6 +9,13 @@ if (DEBUG) {
   console.info('DEBUG mode is on');
 }
 
+const ignore = new Set();
+if (Bun.env.IGNORE) {
+  for (const mac of Bun.env.IGNORE.split(',')) {
+    ignore.add(mac);
+  }
+}
+
 /** @type {Map<string, network.Device & sku.SKU>} **/
 const deviceTable = new Map();
 
@@ -26,6 +33,13 @@ async function deviceScan() {
   for (const device of devices) {
     if (macs.has(device.mac))
       continue;
+    if (ignore.has(device.mac)) {
+      if (DEBUG) {
+        console.info('Ignore:', device.mac);
+      }
+      continue;
+    }
+
     macs.add(device.mac);
 
     if (deviceTable.has(device.mac))
