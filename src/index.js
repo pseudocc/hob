@@ -20,6 +20,7 @@ if (Bun.env.IGNORE) {
 const deviceTable = new Map();
 
 async function deviceScan() {
+  const scanStart = Date.now();
   const devices = await network.arpScan();
   const macs = new Set();
 
@@ -30,6 +31,7 @@ async function deviceScan() {
     deviceTable.delete(mac);
   }
 
+  const promises = [];
   for (const device of devices) {
     if (macs.has(device.mac))
       continue;
@@ -56,7 +58,7 @@ async function deviceScan() {
       saved.ip = device.ip;
     }
 
-    network.resolveHost(device.ip).then(async hostname => {
+    const subPromise = network.resolveHost(device.ip).then(async hostname => {
       if (hostname == null)
         return;
 
@@ -79,9 +81,12 @@ async function deviceScan() {
     });
 
     deviceTable.set(device.mac, sku.defineSKU(device));
+    promises.push(subPromise);
   }
 
-  setTimeout(deviceScan, 5e3);
+  await Promise.all(promises);
+  const nextScan = Math.max(0, 5e3 - (Date.now() - scanStart));
+  setTimeout(deviceScan, nextScan);
 }
 
 deviceScan();
