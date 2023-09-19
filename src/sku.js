@@ -11,12 +11,47 @@
 'use strict';
 const DEBUG = !!Bun.env.DEBUG;
 
-const sshNC = [
-  'ssh',
-  '-o', 'StrictHostKeyChecking=no',
-  '-o', 'UserKnownHostsFile=/dev/null',
-  '-o', 'PasswordAuthentication=no',
-];
+function idle(timeout) {
+  return new Promise(resolve => setTimeout(resolve, timeout));
+}
+
+/**
+ * Get the stdout of a command on the SKU device via SSH.
+ * @param {string} ip The IP address of the device.
+ * @param {string} user The username to use for SSH.
+ * @param {string[]} commands The commands to run.
+ * @return {Promise<?string>} The stdout of the command.
+**/
+async function waitSSH(ip, user, commands) {
+  const proc = Bun.spawn([
+    'ssh',
+    '-o', 'StrictHostKeyChecking=no',
+    '-o', 'UserKnownHostsFile=/dev/null',
+    '-o', 'PasswordAuthentication=no',
+    `${user}@${ip}`,
+    ...commands,
+  ], { stderr: 'ignore' });
+
+  await idle(2000);
+  if (!proc.killed) {
+    if (DEBUG) {
+      console.warn(`${ip}: ${waitSSH.name} took too long to exit, killing`);
+    }
+    proc.kill();
+    return null;
+  }
+
+  const exited = await proc.exited;
+  if (exited !== 0) {
+    if (DEBUG) {
+      console.warn(`${ip}: ${waitSSH.name} exited with code ${exited}`);
+    }
+    return null;
+  }
+
+  const text = await new Response(proc.stdout).text();
+  return text.trim();
+}
 
 /**
  * Get the build stamp of the SKU device.
@@ -24,28 +59,16 @@ const sshNC = [
  * @param {string} user The username to use for SSH.
  * @return {Promise<?string>} The build stamp of the device.
 **/
-"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-export async function buildStamp(ip, user='u') {
-  const proc = Bun.spawn([
-    ...sshNC, `${user}@${ip}`,
-    'cat', '/etc/buildstamp',
-  ], { stderr: 'ignore' });
-  const text = await new Response(proc.stdout).text();
-  const exited = await proc.exited;
+export async function buildStamp(ip, user = 'u') {
+  const content = await waitSSH(ip, user, ['cat', '/etc/buildstamp']);
+  if (!content)
+  return null;
 
-  if (exited !== 0) {
-    if (DEBUG) {
-      console.warn(`${ip}: ${buildStamp.name} exited with code ${exited}`);
-    }
-    return null;
-  }
-
-  for (const line of (text || '').split('\n')) {
-    if (line.startsWith('#'))
+  for (const line of content.split('\n')) {
+    if (line.startsWith('#')) 
       continue;
     return line;
   }
-
   return null;
 }
 
@@ -55,22 +78,8 @@ export async function buildStamp(ip, user='u') {
  * @param {string} user The username to use for SSH.
  * @return {Promise<?string>} The BIOS version of the device.
 **/
-export async function biosVersion(ip, user='u') {
-  const proc = Bun.spawn([
-    ...sshNC, `${user}@${ip}`,
-    'cat', '/sys/class/dmi/id/bios_version',
-  ], { stderr: 'ignore' });
-  const text = await new Response(proc.stdout).text();
-  const exited = await proc.exited;
-
-  if (exited !== 0) {
-    if (DEBUG) {
-      console.warn(`${ip}: ${biosVersion.name} exited with code ${exited}`);
-    }
-    return null;
-  }
-
-  return text.trim();
+export async function biosVersion(ip, user = 'u') {
+  return await waitSSH(ip, user, ['cat', '/sys/class/dmi/id/bios_version']);
 }
 
 /**
@@ -79,22 +88,8 @@ export async function biosVersion(ip, user='u') {
  * @param {string} user The username to use for SSH.
  * @return {Promise<?string>} The kernel release of the device.
 **/
-export async function kernel(ip, user='u') {
-  const proc = Bun.spawn([
-    ...sshNC, `${user}@${ip}`,
-    'uname', '-r',
-  ], { stderr: 'ignore' });
-  const text = await new Response(proc.stdout).text();
-  const exited = await proc.exited;
-
-  if (exited !== 0) {
-    if (DEBUG) {
-      console.warn(`${ip}: ${kernel.name} exited with code ${exited}`);
-    }
-    return null;
-  }
-
-  return text.trim();
+export async function kernel(ip, user = 'u') {
+  return await waitSSH(ip, user, ['uname', '-r']);
 }
 
 /**
@@ -103,23 +98,8 @@ export async function kernel(ip, user='u') {
  * @param {string} user The username to use for SSH.
  * @return {Promise<?string>} The hostname of the device.
 **/
-export async function hostname(ip, user='u') {
-  const proc = Bun.spawn([
-    ...sshNC, `${user}@${ip}`,
-    'cat', '/etc/hostname',
-  ], { stderr: 'ignore' });
-
-  const text = await new Response(proc.stdout).text();
-  const exited = await proc.exited;
-
-  if (exited !== 0) {
-    if (DEBUG) {
-      console.warn(`${ip}: ${hostname.name} exited with code ${exited}`);
-    }
-    return null;
-  }
-
-  return text.trim();
+export async function hostname(ip, user = 'u') {
+  return await waitSSH(ip, user, ['cat', '/etc/hostname']);
 }
 
 function skuGetter() {
