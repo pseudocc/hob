@@ -4,6 +4,7 @@
  * @typedef {Object} Device
  * @property {string} ip The IP address of the device.
  * @property {string} mac The MAC address of the device.
+ * @property {number} tolerance The number of times the device was not found.
  * @property {?string} hostname The hostname of the device.
  * @property {?number} seen The timestamp when the device was last seen.
 **/
@@ -45,7 +46,7 @@ export async function arpScan() {
   for (const line of (text || '').split('\n')) {
     const [ip, mac] = line.split('\t');
     if (ip && mac) {
-      devices.push({ip, mac});
+      devices.push({ip, mac, tolerance: 0});
     }
   }
   return devices;

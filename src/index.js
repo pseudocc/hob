@@ -18,16 +18,20 @@ if (Bun.env.IGNORE) {
 
 /** @type {Map<string, network.Device & sku.SKU>} **/
 const deviceTable = new Map();
+const MAX_TOLERANCE = 5;
 
 async function deviceScan() {
+  console.info(`${new Date().toISOString()} Scanning...`);
   const scanStart = Date.now();
   const devices = await network.arpScan();
+  console.info('Found devices: ', devices.map(d => d.mac));
   const macs = new Set();
 
   for (const mac of deviceTable.keys()) {
     const device = deviceTable.get(mac);
     if (Date.now() - (device.seen || 0) < 6e4)
       continue;
+    console.info('Device gone:', mac);
     deviceTable.delete(mac);
   }
 
@@ -44,8 +48,8 @@ async function deviceScan() {
 
     macs.add(device.mac);
 
-    if (deviceTable.has(device.mac)) {
-      const saved = deviceTable.get(device.mac);
+    const saved = deviceTable.get(device.mac);
+    if (saved && saved.tolerance < MAX_TOLERANCE) {
       if (!saved.seen)
         continue;
       saved.seen = Date.now();
@@ -59,11 +63,13 @@ async function deviceScan() {
     }
 
     const subPromise = network.resolveHost(device.ip).then(async hostname => {
-      if (hostname == null)
-        return;
-
       device.hostname = hostname;
       device.seen = Date.now();
+
+      if (hostname == null) {
+        device.tolerance++;
+        return;
+      }
 
       if (hostname === '')
         return;
@@ -85,8 +91,9 @@ async function deviceScan() {
   }
 
   await Promise.all(promises);
-  const nextScan = Math.max(0, 5e3 - (Date.now() - scanStart));
+  const nextScan = Math.max(0, 1e4 - (Date.now() - scanStart));
   setTimeout(deviceScan, nextScan);
+  console.info(`${new Date().toISOString()} Scan done, next in ${nextScan}ms`);
 }
 
 deviceScan();
