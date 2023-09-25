@@ -24,7 +24,6 @@ async function deviceScan() {
   console.info(`${new Date().toISOString()} Scanning...`);
   const scanStart = Date.now();
   const devices = await network.arpScan();
-  console.info('Found devices: ', devices.map(d => d.mac));
   const macs = new Set();
 
   for (const mac of deviceTable.keys()) {
@@ -49,20 +48,24 @@ async function deviceScan() {
     macs.add(device.mac);
 
     const saved = deviceTable.get(device.mac);
-    if (saved && saved.tolerance < MAX_TOLERANCE) {
-      if (!saved.seen)
-        continue;
+    if (saved) {
       saved.seen = Date.now();
 
-      if (saved.ip === device.ip)
-        continue;
-      if (DEBUG) {
-        console.info(`${device.mac} IP: ${saved.ip} -> ${device.ip}`);
+      if (saved.ip !== device.ip) {
+        if (DEBUG) {
+          console.info(`${device.mac} IP: ${saved.ip} -> ${device.ip}`);
+        }
+        saved.ip = device.ip;
       }
-      saved.ip = device.ip;
+
+      if (saved.tolerance > MAX_TOLERANCE || saved.sku)
+        continue;
+
+      device.tolerance = saved.tolerance;
     }
 
     const subPromise = network.resolveHost(device.ip).then(async hostname => {
+      const saved = deviceTable.get(device.mac);
       device.hostname = hostname;
       device.seen = Date.now();
 
@@ -79,6 +82,9 @@ async function deviceScan() {
         device.buildStamp = buildStamp;
         device.biosVersion = await sku.biosVersion(device.ip);
         device.kernel = await sku.kernel(device.ip);
+        device.tolerance = 0;
+      } else {
+        device.tolerance++;
       }
 
       if (DEBUG) {
@@ -109,7 +115,7 @@ app.get('/devices', (c) => {
   for (const device of deviceTable.values()) {
     if (device.sku) {
       if (json) {
-      result[device.hostname] = device.projection;
+        result[device.hostname] = device.projection;
       } else {
         result.push(device.hostname);
       }
