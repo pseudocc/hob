@@ -65,7 +65,6 @@ async function deviceScan() {
     }
 
     const subPromise = network.resolveHost(device.ip).then(async hostname => {
-      const saved = deviceTable.get(device.mac);
       device.hostname = hostname;
       device.seen = Date.now();
 
@@ -123,6 +122,11 @@ app.get('/devices', (c) => {
   }
 
   return json ? c.json(result) : c.text(result.join(','));
+});
+
+app.get('/pm2-restart', (c) => {
+  c.text("Restarting...");
+  process.exit(2);
 });
 
 export default {
