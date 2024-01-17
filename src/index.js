@@ -125,8 +125,10 @@ app.get('/devices', (c) => {
 });
 
 app.get('/pm2-restart', (c) => {
-  c.text("Restarting...");
-  process.exit(2);
+  setTimeout(() => {
+    process.exit(2);
+  }, 5000);
+  return c.text("Restart in 5 seconds");
 });
 
 export default {
