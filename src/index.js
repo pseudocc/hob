@@ -73,7 +73,7 @@ async function deviceScan() {
         return;
       }
 
-      if (hostname === '')
+      if (hostname === '' || hostname.startsWith('ubuntu-desktop'))
         return;
 
       const buildStamp = await sku.buildStamp(device.ip);
