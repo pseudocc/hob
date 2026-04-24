@@ -63,12 +63,17 @@ async function waitSSH(ip, user, commands) {
  * @return {Promise<?string>} The build stamp of the device.
 **/
 export async function buildStamp(ip, user = 'u') {
-  const content = await waitSSH(ip, user, ['cat', '/etc/buildstamp']);
+  let content;
+  for (const candidate of ['/var/lib/ubuntu_dist_channel', '/etc/buildstamp']) {
+    content = await waitSSH(ip, user, ['cat', candidate]);
+    if (content)
+      break;
+  }
   if (!content)
-  return null;
+    return null;
 
   for (const line of content.split('\n')) {
-    if (line.startsWith('#')) 
+    if (line.startsWith('#'))
       continue;
     return line;
   }
