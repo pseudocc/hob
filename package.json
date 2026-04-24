@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "scripts": {
     "dev": "DEBUG=1 bun run --hot src/index.js",
     "start": "source .env && bun run src/index.js"

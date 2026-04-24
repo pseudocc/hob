@@ -121,7 +121,7 @@ app.get('/devices', (c) => {
     }
   }
 
-  return json ? c.json(result) : c.text(result.join(','));
+  return json ? c.json(result) : c.text(result.sort().join(','));
 });
 
 app.get('/pm2-restart', (c) => {
