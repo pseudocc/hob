@@ -66,7 +66,7 @@ async function deviceScan() {
         continue;
       }
 
-      if (saved.registered && Date.now() - saved.registered < 3e5)
+      if (saved.registered && Date.now() - saved.registered < 3e6)
         continue;
 
       device.tolerance = saved.tolerance;
