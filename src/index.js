@@ -58,7 +58,9 @@ async function deviceScan() {
         saved.ip = device.ip;
       }
 
-      if (saved.tolerance > MAX_TOLERANCE || saved.sku)
+      if (saved.tolerance > MAX_TOLERANCE)
+        continue;
+      if (saved.registered && Date.now() - saved.registered < 3e5)
         continue;
 
       device.tolerance = saved.tolerance;
@@ -82,9 +84,11 @@ async function deviceScan() {
         device.biosVersion = await sku.biosVersion(device.ip);
         device.kernel = await sku.kernel(device.ip);
         device.tolerance = 0;
+        device.registered = Date.now();
       } else {
         device.tolerance++;
       }
+      await sku.closeControl(device.ip);
 
       if (DEBUG) {
         console.info(device);

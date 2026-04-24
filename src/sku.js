@@ -28,6 +28,9 @@ async function waitSSH(ip, user, commands) {
     '-o', 'StrictHostKeyChecking=no',
     '-o', 'UserKnownHostsFile=/dev/null',
     '-o', 'PasswordAuthentication=no',
+    '-o', 'ControlMaster=auto',
+    '-o', `ControlPath=/tmp/hob-ssh-%r@%h:%p`,
+    '-o', 'ControlPersist=60',
     `${user}@${ip}`,
     ...commands,
   ], { stderr: 'ignore' });
@@ -100,6 +103,21 @@ export async function kernel(ip, user = 'u') {
 **/
 export async function hostname(ip, user = 'u') {
   return await waitSSH(ip, user, ['cat', '/etc/hostname']);
+}
+
+/**
+ * Close the SSH ControlMaster connection for a device.
+ * @param {string} ip The IP address of the device.
+ * @param {string} user The username used for SSH.
+**/
+export async function closeControl(ip, user = 'u') {
+  const proc = Bun.spawn([
+    'ssh',
+    '-o', 'ControlPath=/tmp/hob-ssh-%r@%h:%p',
+    '-O', 'exit',
+    `${user}@${ip}`,
+  ], { stdout: 'ignore', stderr: 'ignore' });
+  await proc.exited;
 }
 
 function skuGetter() {

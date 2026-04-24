@@ -7,6 +7,7 @@
  * @property {number} tolerance The number of times the device was not found.
  * @property {?string} hostname The hostname of the device.
  * @property {?number} seen The timestamp when the device was last seen.
+ * @property {?number} registered The timestamp when device info was last queried via SSH.
 **/
 
 'use strict';
