@@ -58,8 +58,14 @@ async function deviceScan() {
         saved.ip = device.ip;
       }
 
-      if (saved.tolerance > MAX_TOLERANCE)
+      if (saved.tolerance > MAX_TOLERANCE) {
+        saved.tolerance++;
+        if (saved.tolerance > MAX_TOLERANCE * 5) {
+          saved.tolerance = 0;
+        }
         continue;
+      }
+
       if (saved.registered && Date.now() - saved.registered < 3e5)
         continue;
 
