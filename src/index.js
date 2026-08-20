@@ -19,6 +19,7 @@ if (Bun.env.IGNORE) {
 /** @type {Map<string, network.Device & sku.SKU>} **/
 const deviceTable = new Map();
 const MAX_TOLERANCE = 5;
+const USERS = ['u', 'ubuntu'];
 
 async function deviceScan() {
   console.info(`${new Date().toISOString()} Scanning...`);
@@ -84,17 +85,23 @@ async function deviceScan() {
       if (hostname === '' || hostname.startsWith('ubuntu-desktop'))
         return;
 
-      const buildStamp = await sku.buildStamp(device.ip);
-      if (buildStamp != null) {
-        device.buildStamp = buildStamp;
-        device.biosVersion = await sku.biosVersion(device.ip);
-        device.kernel = await sku.kernel(device.ip);
-        device.tolerance = 0;
-        device.registered = Date.now();
+      const user = await sku.probeUsers(device.ip, USERS);
+      if (user != null) {
+        device.user = user;
+        const buildStamp = await sku.buildStamp(device.ip, device.user);
+        if (buildStamp != null) {
+          device.buildStamp = buildStamp;
+          device.biosVersion = await sku.biosVersion(device.ip, device.user);
+          device.kernel = await sku.kernel(device.ip, device.user);
+          device.tolerance = 0;
+          device.registered = Date.now();
+        } else {
+          device.tolerance++;
+        }
+        await sku.closeControl(device.ip, device.user);
       } else {
         device.tolerance++;
       }
-      await sku.closeControl(device.ip);
 
       if (DEBUG) {
         console.info(device);

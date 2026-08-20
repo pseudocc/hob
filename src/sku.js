@@ -3,6 +3,7 @@
  *
  * @typedef {Object} SKU
  * @property {boolean} sku This is a SKU device.
+ * @property {string} user The username used for SSH.
  * @property {?string} buildStamp The build stamp of the SKU device.
  * @property {?string} biosVersion The BIOS version of the SKU device.
  * @property {?string} kernel The kernel release of the SKU device.
@@ -81,6 +82,21 @@ export async function buildStamp(ip, user = 'u') {
 }
 
 /**
+ * Find a user that can connect to a device via SSH.
+ * @param {string} ip The IP address of the device.
+ * @param {string[]} users The usernames to try for SSH.
+ * @return {Promise<?string>} The working user.
+ **/
+export async function probeUsers(ip, users) {
+  for (const user of users) {
+    if (await waitSSH(ip, user, ['true']) != null)
+      return user;
+    await closeControl(ip, user);
+  }
+  return null;
+}
+
+/**
  * Get the BIOS version of the SKU device.
  * @param {string} ip The IP address of the device.
  * @param {string} user The username to use for SSH.
@@ -133,6 +149,7 @@ function projectionGetter() {
   const projection = {
     ip: this.ip,
     mac: this.mac,
+    user: this.user,
     buildStamp: this.buildStamp,
     biosVersion: this.biosVersion,
     kernel: this.kernel,
